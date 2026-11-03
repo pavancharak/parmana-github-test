@@ -24,6 +24,78 @@ It is the staging target for the connector's go-live test plan. The plan's phase
 
 Do not move to phase 5 until every phase has an exit gate recorded with evidence.
 
+## How the go-live will be done
+
+This is the order of work. Each step ends with an exit gate. Record every result in `docs/TEST-CASES.md`, in the Result and Evidence columns of the test's row.
+
+### Step 1: prepare (before any test)
+
+1. Create the GitHub App and install it on this repository only (`CFG-09`, `CRD-01`).
+2. Store the App key outside any repository. Set `GITHUB_APP_CREDENTIAL`, the Parmana public key, `PARMANA_RELEASE_AUDIENCE` (https) and the Postgres nonce store (`CFG-01` to `CFG-08`).
+3. Name the two approvers. Each keeps a signing key on their own machine. One of them must not be the PR author.
+4. Confirm that `github-pr-read` 1.1.0 and `github-pr-approval` 1.1.0 are in effect on the test instance.
+
+**Gate:** every `CFG` case passes, and the App, approvers and policies are recorded in the Contacts section below.
+
+### Step 2: automated tests
+
+1. In `parmana-connectors`, run typecheck, lint and `npm test` on a clean checkout (`AUT-01`).
+2. Run the input-boundary cases (`AUT-03` to `AUT-14`).
+
+**Gate:** all pass, with the test count recorded.
+
+### Step 3: staging runs against this repository
+
+Run the phases in this order. Each order matters: a later test assumes the earlier one has passed.
+
+1. Credentials (`CRD-01` to `CRD-07`).
+2. Release envelope and nonces (`ENV-01` to `ENV-15`).
+3. Token lifecycle (`TOK-01` to `TOK-07`).
+4. Read path (`RD-01` to `RD-12`), using open PRs only.
+5. Merge path (`MRG-01` to `MRG-23`). Open a new throwaway PR for each merge test, and never reuse a merged one. Each PR is named after its test ID, for example `MRG-04 throwaway`.
+6. Failure, concurrency and evidence (`FAL`, `CON`, `EVD`).
+
+**Gate:** no test has merged a PR it should have refused. Every `Verify first` case is confirmed, and its result recorded.
+
+### Step 4: decisions
+
+1. Decide on `MRG-14`: whether `expectedHeadSha` is required on every merge. Record the decision in the README and in the policy, not only in the test file.
+2. Resolve the branch-protection rule that blocked PR #1, and record which rule it was (`SEC-08`).
+
+**Gate:** both decisions are written down, and the named owner signs them off.
+
+### Step 5: security checks and drills
+
+1. Run the security checks (`SEC-01` to `SEC-11`).
+2. Run the operational drills (`OPS-01` to `OPS-10`), timing each one.
+
+**Gate:** every security check is recorded, and each drill has been run once, with its time.
+
+### Step 6: go / no-go
+
+The named owner reviews the recorded results against the gates above.
+
+- **Go** only if every gate is met, with evidence linked from the test file.
+- **No-go** if any merge was approved that should have been refused, any trust record fails verification, or any token appears in a log. Fix the cause, then repeat Step 3 from the start.
+
+### Step 7: limited live pilot
+
+1. Choose one low-stakes repository with branch protection. Not this repository.
+2. Set `PARMANA_ALLOW_LIVE_KEYS=true` only after the go decision is recorded.
+3. Week 1: `github:pr-fetch` only, on that repository.
+4. Week 2: `github:pr-merge` for documentation-only PRs, with a named approver for every merge.
+5. Watch the first five merges personally. Check each trust record with `parmana-verifier`.
+
+**Stop and disable `github:pr-merge`** if a merge is approved that policy should have refused, a trust record fails verification, a token appears in a log, or an `upstream_error` cannot be explained.
+
+**Rollback:** the connector cannot undo a merge. Revert the commit with `git revert` on the target branch, and keep the original trust record.
+
+### Step 8: after the pilot
+
+Update this README and `docs/TEST-CASES.md` with the pilot results, the decisions taken and any new cases. Open a PR for that update.
+
+---
+
 ## Staging tests
 
 Record the result and the evidence (run ID, error code, PR state) for each test.
