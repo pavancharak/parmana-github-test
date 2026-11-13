@@ -98,8 +98,11 @@ The named owner reviews the recorded results against the gates above.
 1. Choose one low-stakes repository with branch protection. Not this repository.
 2. Set `PARMANA_ALLOW_LIVE_KEYS=true` only after the go decision is recorded.
 3. Week 1: `github:pr-fetch` only, on that repository.
-4. Week 2: `github:pr-merge` for documentation-only PRs, with a named approver for every merge.
-5. Watch the first five merges personally. Check each trust record with `parmana-verifier`.
+4. Week 2: `github:comment` only, on open PRs in that repository. Each comment is approved by a named approver, and the approved text is the exact text posted. Check each comment's marker with the search in `COMMENTS.md`.
+5. Week 3: `github:pr-merge` for documentation-only PRs, with a named approver for every merge.
+6. Watch the first five merges and the first five comments personally. Check each trust record with `parmana-verifier`.
+
+**Stop and disable `github:comment`** if a comment is posted that its approval did not cover, a comment is posted twice for one transaction ID, a token appears in a comment, or an `upstream_error` about a comment cannot be explained.
 
 **Stop and disable `github:pr-merge`** if a merge is approved that policy should have refused, a trust record fails verification, a token appears in a log, or an `upstream_error` cannot be explained.
 
