@@ -35,6 +35,7 @@ The connector's own documentation is in `parmana-connectors`, under `src/connect
 - Branch protection on `main` requires the status check `test`. Required approvals are 0, for an owner-run test.
 - **Open:** PR #1 once showed "Cannot update this protected ref" before it was merged. The ruleset rule that caused it is not yet recorded here. Record it before the next merge test (`SEC-08`).
 - **Not yet verified:** which GitHub App permission lets the App post comments on a pull request. `CMT-00` settles this.
+- **Policy defect (blocks `github:comment` go-live):** `github-pr-comment` 1.0.0 in parmana-core #605 binds the approval to `parameters.body` as a number, but the body is a string. Every comment is refused, fail closed (`CMT-17`). It also does not bind the body text at all, so an approval for one body may cover another (`CMT-18`). The policy needs a redesign before it can be approved. The design decision is still open.
 - The `github:comment` cases are written here but have not been run. They are on branch `docs/github-comment-cases`, which is not merged.
 - The approver and the App owner are not named yet (see Contacts).
 

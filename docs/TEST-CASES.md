@@ -224,6 +224,9 @@ Use an open throwaway PR named `CMT throwaway`. Use a separate transaction ID fo
 | CMT-14 | **[High]** Body of 4,000 emoji, which is 16,000 bytes | Verify first: confirm whether the limit counts characters or UTF-16 units. GitHub accepts the comment, which is under its 65,536-byte limit. Record the result. |  |  |
 | CMT-15 | **[High]** Target is an issue number that is not a pull request | Refused, or reported as an error. No false success. Verify first: record the response. |  |  |
 | CMT-16 | **[High]** Comment on a closed PR, then on a merged PR | Verify first: record whether GitHub accepts each comment. The connector reports GitHub's answer. |  |  |
+| CMT-17 | **[High]** Approved comment, with `github-pr-comment` 1.0.0 as it is in parmana-core #605 | Expected: posted. **Known defect:** the approval declares `value: "parameters.body"`, which is a string, but the verifier needs a number there. It refuses every comment, fail closed. Record the refusal. Do not treat this as a pass until the policy binding is fixed. |  |  |
+| CMT-18 | **[High]** Approval for body A on a PR, then a request with body B on the same PR | Refused. The approval covers the exact text it was given. **Known gap:** the current policy does not bind the body text, so a different body may pass. Record the result. |  |  |
+| CMT-19 | **[High]** Approval for PR X, then a request with the same body on PR Y | Refused. The approval covers the exact target. Record the result. |  |  |
 
 ---
 
