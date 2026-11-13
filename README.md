@@ -1,6 +1,6 @@
 # parmana-github-test
 
-Throwaway repository for testing the Parmana GitHub connector (`github:pr-fetch` and `github:pr-merge`) before it is used on real repositories.
+Throwaway repository for testing the Parmana GitHub connector (`github:pr-fetch`, `github:pr-merge` and `github:comment`) before it is used on real repositories.
 
 **Do not use this repository for real work.** Its pull requests are merged during tests, and a merge cannot be undone by the connector.
 
@@ -30,7 +30,7 @@ This is the order of work. Each step ends with an exit gate. Record every result
 
 ### Step 1: prepare (before any test)
 
-1. Create the GitHub App and install it on this repository only (`CFG-09`, `CRD-01`).
+1. Create the GitHub App and install it on this repository only (`CFG-09`, `CRD-01`). It needs write access to pull request conversation comments for `github:comment`. Which App permission grants that is not yet verified; `CMT-00` settles it.
 2. Store the App key outside any repository. Set `GITHUB_APP_CREDENTIAL`, the Parmana public key, `PARMANA_RELEASE_AUDIENCE` (https) and the Postgres nonce store (`CFG-01` to `CFG-08`).
 3. Name the two approvers. Each keeps a signing key on their own machine. One of them must not be the PR author.
 4. Confirm that `github-pr-read` 1.1.0 and `github-pr-approval` 1.1.0 are in effect on the test instance.
@@ -54,8 +54,9 @@ Run the phases in this order. Each order matters: a later test assumes the earli
 4. Read path (`RD-01` to `RD-12`), using open PRs only.
 5. Merge path (`MRG-01` to `MRG-23`). Open a new throwaway PR for each merge test, and never reuse a merged one. Each PR is named after its test ID, for example `MRG-04 throwaway`.
 6. Failure, concurrency and evidence (`FAL`, `CON`, `EVD`).
+7. Comment path (`CMT-00` to `CMT-12`), on an open throwaway PR. Comments do not change a PR's state, so one open PR can hold all of these comments. Record each comment's ID and marker.
 
-**Gate:** no test has merged a PR it should have refused. Every `Verify first` case is confirmed, and its result recorded.
+**Gate:** no test has merged a PR it should have refused. Every `Verify first` case is confirmed, and its result recorded. Every `CMT` case has a recorded result, and no test left more than one comment for the same transaction ID.
 
 ### Step 4: decisions
 
@@ -132,6 +133,28 @@ Use a new throwaway PR for each test. A merge is final.
 | Same release sent again after a merge | Refused by the nonce store. A repeat at GitHub also fails. |
 | `merge`, `squash` and `rebase`, one PR each | Each merges with the chosen method. |
 | Unknown `mergeMethod` | Refused before any call |
+
+### Comment (`github:comment`)
+
+Each request posts one comment, with the body followed by a hidden marker `<!-- parmana:btx=<businessTransactionId> -->`. Use an open PR, named `CMT throwaway`. Use a test transaction ID for each case, and record it. Find a comment by searching for its marker, as in `COMMENTS.md`.
+
+| Test | Expected |
+|---|---|
+| `CMT-00` App with only "Pull requests: write" posts a comment | Verify first. If it returns HTTP 403, the App needs another permission (for example "Issues: write"). Record which one was needed, and update the App setup in the README. |
+| `CMT-01` Valid body, valid transaction ID, open PR | Posted once. The response has `commentId` and `url`. The comment text is the body, a blank line, then the marker. |
+| `CMT-02` Marker search for that transaction ID | Exactly one comment matches |
+| `CMT-03` Body of exactly 4,000 characters | Posted once |
+| `CMT-04` Body of 4,001 characters | Refused as `invalid_input` before any call. No comment appears. |
+| `CMT-05` Empty or whitespace-only body | Refused as `invalid_input` before any call |
+| `CMT-06` Extra parameter, for example `mergeMethod` | Refused before any call |
+| `CMT-07` Missing transaction ID, or one containing `-->` or a space | Refused as `invalid_input` before any call |
+| `CMT-08` Same transaction ID sent again after `CMT-01` | Refused by the release ledger. The comment count on the PR stays the same. |
+| `CMT-09` Malformed target, for example `owner/repo` with no number | Refused before any call |
+| `CMT-10` `PARMANA_CONNECTOR_TIMEOUT_MS=1` | The error says the comment may have reached GitHub, and to check the PR. Search for the marker. Record zero or one matches, never two. Do not post again. |
+| `CMT-11` Lost answer after the post (fake, or a dropped connection) | Same as `CMT-10`. A marker search finds the comment, and it is recorded without a second post. |
+| `CMT-12` Token and credential checks | No installation token or credential in the response, the error or the comment text. Only a fingerprint appears. |
+
+Mentions are not tested here. A body with `@user` notifies that user, and nothing checks for it. Use a test account only, if a mention is ever tested.
 
 ### Failure and ambiguity
 
