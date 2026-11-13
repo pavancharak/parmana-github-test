@@ -1,6 +1,6 @@
 # GitHub connector test cases
 
-Test cases for the Parmana GitHub connector (`github:pr-fetch` and `github:pr-merge`), run against this repository before the connector goes live. The phases, exit gates and rules are in the [README](../README.md).
+Test cases for the Parmana GitHub connector (`github:pr-fetch`, `github:pr-merge` and `github:comment`), run against this repository before the connector goes live. Cases tagged **[High]** or **[Lower]** are the priority for the run; untagged cases are run as well. The phases, exit gates and rules are in the [README](../README.md).
 
 ## How to record a result
 
@@ -129,6 +129,7 @@ Mark a case **Verify first** when its expected result depends on behaviour that 
 | RD-10 | Read a closed, unmerged PR | Success, with `state` closed and `mergedAt` null |  |  |
 | RD-11 | Read a draft PR | Success, with the draft state visible. Verify first: confirm the connector returns this field. |  |  |
 | RD-12 | Read a PR from a fork | Verify first: record the result. The App must have access to the fork. |  |  |
+| RD-13 | **[High]** Read a PR while GitHub reports `mergeable` as null (still computing) | The read does not report the PR as mergeable. Verify first: record the value returned, and whether a merge is refused on it. |  |  |
 
 ---
 
@@ -182,6 +183,9 @@ Use a new throwaway PR for each of these tests. A merge is final.
 | FAL-12 | GitHub returns a redirect on the merge request | Refused. The credential is not sent to another host. Verify first. |  |  |
 | FAL-13 | The Parmana service crashes after the merge request is sent and before the decision is recorded | On restart, the release cannot be replayed. Operator checks the PR. Record the runbook steps. |  |  |
 | FAL-14 | Postgres fails after the merge but before the nonce is recorded | Verify first: expected behaviour is that a resend is not merged twice. GitHub refuses the second merge. Record the result. |  |  |
+| FAL-15 | **[Lower]** The host clock is ten minutes slow or fast, so the App JWT is rejected | `credential_invalid` or `upstream_error`, with a clear message. No merge or comment is attempted. |  |  |
+| FAL-16 | **[Lower]** The App is uninstalled or suspended while a run is in progress | Later calls stop with an error. No success is reported. Record the error code. |  |  |
+| FAL-17 | **[Lower]** GitHub returns HTTP 503 | `upstream_error`, with the check-PR instruction. No retry. |  |  |
 
 ---
 
@@ -194,6 +198,32 @@ Use a new throwaway PR for each of these tests. A merge is final.
 | CON-03 | Twenty parallel `pr-fetch` calls for the same PR | All succeed or fail cleanly. No token is shared between calls. Record the p50 and p95 latency. |  |  |
 | CON-04 | Parallel merges on different PRs in the same repository | Each PR is handled on its own. No cross-talk in the trust records. |  |  |
 | CON-05 | Parallel calls exceed the GitHub rate limit | Failures are `upstream_error` with no retries. No credential is shown. |  |  |
+
+---
+
+## Phase 2i: comment path (`github:comment`)
+
+Use an open throwaway PR named `CMT throwaway`. Use a separate transaction ID for each case, and record it. Comments do not change the PR's state, so one open PR can hold all of them.
+
+| ID | Test | Expected | Result | Evidence |
+|---|---|---|--------|----------|
+| CMT-00 | Verify first: an App with only "Pull requests: write" posts a comment | If it returns HTTP 403, the App needs another permission (for example "Issues: write"). Record which one was needed, and update the App setup in the README. |  |  |
+| CMT-01 | Valid body, valid transaction ID, open PR | Posted once. The response has `commentId` and `url`. The comment text is the body, a blank line, then the marker. |  |  |
+| CMT-02 | Marker search for that transaction ID | Exactly one comment matches |  |  |
+| CMT-03 | Body of exactly 4,000 characters | Posted once |  |  |
+| CMT-04 | Body of 4,001 characters | Refused as `invalid_input` before any call. No comment appears. |  |  |
+| CMT-05 | Empty or whitespace-only body | Refused as `invalid_input` before any call |  |  |
+| CMT-06 | Extra parameter, for example `mergeMethod` | Refused before any call |  |  |
+| CMT-07 | Missing transaction ID, or one containing `-->` or a space | Refused as `invalid_input` before any call |  |  |
+| CMT-08 | Same transaction ID sent again after CMT-01 | Refused by the release ledger. The comment count on the PR stays the same. |  |  |
+| CMT-09 | Malformed target, for example `owner/repo` with no number | Refused before any call |  |  |
+| CMT-10 | `PARMANA_CONNECTOR_TIMEOUT_MS=1` | The error says the comment may have reached GitHub, and to check the PR. Search for the marker. Record zero or one match, never two. Do not post again. |  |  |
+| CMT-11 | Lost answer after the post (fake, or a dropped connection) | As CMT-10. A marker search finds the comment, which is recorded without a second post. |  |  |
+| CMT-12 | Token and credential checks | No installation token or credential appears in the response, the error or the comment text. Only a fingerprint appears. |  |  |
+| CMT-13 | **[High]** Body that contains a fake marker, `<!-- parmana:btx=<another id> -->` | The marker search for the real transaction ID finds only the real comment. Verify first: record the search result. |  |  |
+| CMT-14 | **[High]** Body of 4,000 emoji, which is 16,000 bytes | Verify first: confirm whether the limit counts characters or UTF-16 units. GitHub accepts the comment, which is under its 65,536-byte limit. Record the result. |  |  |
+| CMT-15 | **[High]** Target is an issue number that is not a pull request | Refused, or reported as an error. No false success. Verify first: record the response. |  |  |
+| CMT-16 | **[High]** Comment on a closed PR, then on a merged PR | Verify first: record whether GitHub accepts each comment. The connector reports GitHub's answer. |  |  |
 
 ---
 

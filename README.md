@@ -142,6 +142,7 @@ Update this README and `docs/TEST-CASES.md` with the pilot results, the decision
 | Approval for a different PR number | Refused by policy |
 | Target `owner/repo#abc` | Refused as `invalid_input` |
 | An extra parameter | Refused before any call |
+| `RD-13` **[High]** Read while GitHub reports `mergeable` as null (still computing) | The read does not report the PR as mergeable. Verify first: record the value, and whether a merge is refused on it. |
 
 ### Merge (`github:pr-merge`)
 
@@ -176,6 +177,10 @@ Each request posts one comment: the body, a blank line, then the hidden marker `
 | `CMT-10` `PARMANA_CONNECTOR_TIMEOUT_MS=1` | The error says the comment may have reached GitHub, and to check the PR. Search for the marker. Record zero or one match, never two. Do not post again. |
 | `CMT-11` Lost answer after the post (fake, or a dropped connection) | As `CMT-10`. A marker search finds the comment, which is recorded without a second post. |
 | `CMT-12` Token and credential checks | No installation token or credential appears in the response, the error or the comment text. Only a fingerprint appears. |
+| `CMT-13` **[High]** Body containing a fake marker `<!-- parmana:btx=<another id> -->` | The marker search for the real transaction ID finds only the real comment. Verify first: record the search result. |
+| `CMT-14` **[High]** Body of 4,000 emoji (16,000 bytes) | Verify first: confirm whether the limit counts characters or UTF-16 units. GitHub accepts it, under its 65,536-byte limit. |
+| `CMT-15` **[High]** Target is an issue number, not a pull request | Refused, or reported as an error. No false success. Verify first: record the response. |
+| `CMT-16` **[High]** Comment on a closed PR, then on a merged PR | Verify first: record whether GitHub accepts each comment. The connector reports GitHub's answer. |
 
 Mentions are not tested here. A body with `@user` notifies that user, and nothing checks for it. If a mention is ever tested, use a test account only.
 
@@ -186,6 +191,9 @@ Mentions are not tested here. A body with `@user` notifies that user, and nothin
 | `PARMANA_CONNECTOR_TIMEOUT_MS=1` | Timeout error. Check the PR state afterwards. |
 | Network interrupted during a merge (or the fake) | The error says the merge may have reached GitHub, and to check the PR |
 | GitHub returns HTTP 500 for a merge | `upstream_error`, with the check-PR instruction |
+| `FAL-15` **[Lower]** Host clock ten minutes off, so the App JWT is rejected | `credential_invalid` or `upstream_error`, with a clear message. No merge or comment is attempted. |
+| `FAL-16` **[Lower]** App uninstalled or suspended during a run | Later calls stop with an error. No success is reported. |
+| `FAL-17` **[Lower]** GitHub returns HTTP 503 | `upstream_error`, with the check-PR instruction. No retry. |
 
 ### Evidence
 
