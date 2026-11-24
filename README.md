@@ -8,8 +8,10 @@ Throwaway repository for testing the Parmana GitHub connector (`github:pr-fetch`
 
 - `main` has a README and a workflow named `CI` with one job, `test`. The job is a placeholder check that prints a message.
 - PR #1 (`test/pr-fetch-merge`) has been merged into `main`. A new throwaway PR is needed for every merge test.
+- Live connector run on 2026-11-24: five live GitHub connector tests passed against this repository. They covered the read, comment, merge and stale-SHA paths. The record is in `docs/LIVE-CONNECTOR-RUN-2026-11-24.md`. Those tests call the connector directly, so they do not cover the Parmana staging cases.
+- Disposable pull requests from that run: #9 (comment, can be closed), #10 and #12 (merged), #11 (stale-SHA target, keep open until that test is no longer run), #13 (the record itself).
 - Branch protection on `main`: a required status check named `test`, with required approvals set to 0 for an owner-run test.
-- Open item: PR #1 showed "Cannot update this protected ref" before it was merged. The ruleset rule that caused it is not yet recorded here. Record it before the next merge test.
+- Open item: PR #1 showed "Cannot update this protected ref" before it was merged. The ruleset rule that caused it is not yet recorded here. Record it before the next merge test. The live run merged PR #10 and PR #12 through the API without that error, so the blocker did not reproduce there.
 
 ## What this repository is for
 
