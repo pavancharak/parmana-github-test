@@ -15,9 +15,9 @@ Throwaway repository for testing the Parmana GitHub connector (`github:pr-fetch`
 
 The documentation for the GitHub connector and its live tests is in the connectors repository, not here:
 
-- [Capabilities](https://github.com/pavancharak/parmana-connectors/blob/claude/gifted-cori-6l7cux/src/connectors/github/CAPABILITIES.md): what each capability does, every GitHub call, and every error.
-- [Live tests](https://github.com/pavancharak/parmana-connectors/blob/claude/gifted-cori-6l7cux/src/connectors/github/LIVE.md): how to run them, the variables, the GitHub App setup, and troubleshooting.
-- [Live run of 2026-11-24](https://github.com/pavancharak/parmana-connectors/blob/claude/gifted-cori-6l7cux/src/connectors/github/LIVE-RUN-2026-11-24.md): the results of the first live run, and which staging-plan cases it does and does not cover.
+- [Capabilities](https://github.com/pavancharak/parmana-connectors/blob/main/src/connectors/github/CAPABILITIES.md): what each capability does, every GitHub call, and every error.
+- [Live tests](https://github.com/pavancharak/parmana-connectors/blob/main/src/connectors/github/LIVE.md): how to run them, the variables, the GitHub App setup, and troubleshooting.
+- [Live run of 2026-11-24](https://github.com/pavancharak/parmana-connectors/blob/main/src/connectors/github/LIVE-RUN-2026-11-24.md): the results of the first live run, and which staging-plan cases it does and does not cover.
 
 Keep this README to the state of the repository itself. Record connector changes in the connectors repository.
 
